@@ -2,8 +2,8 @@ package com.tvmaze.challenge.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 
-val PrimaryColor = Color(0xFFef233c)
-val SecondaryColor = Color(0xFFd90429)
+val PrimaryColor = Color(0xFF1b6f20)
+val SecondaryColor = Color(0xFF6cac6c)
 val ContrastColor = Color(0xFF8d99ae)
 val BackgroundColor = Color(0xFF2b2d42)
 val FontColor = Color(0xFFedf2f4)

@@ -35,6 +35,8 @@ import coil.compose.rememberAsyncImagePainter
 import com.tvmaze.challenge.core.utils.animation.RotationArgs
 import com.tvmaze.challenge.core.utils.animation.ScaleAndAlphaArgs
 import com.tvmaze.challenge.core.utils.animation.StateAnimation
+import com.tvmaze.challenge.domain.model.character.Character
+import com.tvmaze.challenge.domain.model.episodes.Episode
 import com.tvmaze.challenge.domain.model.show.Show
 import com.tvmaze.challenge.domain.model.show.Talents
 import com.tvmaze.challenge.presentation.theme.PrimaryColor
@@ -42,7 +44,7 @@ import com.tvmaze.challenge.presentation.theme.PrimaryColor
 
 @Composable
 fun MyCard(
-    show: Show,
+    show: Episode,
     index: Int = 0,
     columns: Int,
     state: LazyListState,
@@ -91,16 +93,16 @@ fun MyCard(
         Box {
 
             Row {
-                Image(
-                    painter = rememberAsyncImagePainter(show.image),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(18.dp))
-                        .height(200.dp)
-                        .fillMaxWidth(0.4F)
-                        .padding(end = 8.dp)
-                )
+//                Image(
+//                    painter = rememberAsyncImagePainter(show),
+//                    contentDescription = null,
+//                    contentScale = ContentScale.Crop,
+//                    modifier = Modifier
+//                        .clip(RoundedCornerShape(18.dp))
+//                        .height(200.dp)
+//                        .fillMaxWidth(0.4F)
+//                        .padding(end = 8.dp)
+//                )
 
                 Column(
                     verticalArrangement = Arrangement.Center,
@@ -158,13 +160,13 @@ fun MyCard(
                     }
 
                     Text(
-                        text = show.network,
+                        text = show.name,
                         modifier = Modifier.padding(top = 12.dp, start = 8.dp),
                         fontSize = 15.sp
                     )
 
                     Text(
-                        text = "${show.airdate} | ${show.airtime} ",
+                        text = "${show.airDate} ",
                         modifier = Modifier.padding(
                             start = 8.dp,
                             top = 8.dp,
@@ -179,6 +181,147 @@ fun MyCard(
         }
     }
 }
+
+@Composable
+fun MyCardCharacter(
+    character: Character,
+    index: Int = 0,
+    columns: Int,
+    state: LazyListState,
+    onClick: (Int) -> Unit
+) {
+
+    //Animation Card
+    val (delay, easing) = state.calculateDelayAndEasing(index, columns)
+    val animation = tween<Float>(durationMillis = 500, delayMillis = delay, easing = easing)
+    val args = ScaleAndAlphaArgs(fromScale = 10f, toScale = 1f, fromAlpha = 0f, toAlpha = 1f)
+    val (scale, alpha) = scaleAndAlpha(args = args, animation = animation)
+
+    val argsRotation = RotationArgs(fromRotation = 80f, toRotation = 0f)
+    val animationRotate = tween<Float>(durationMillis = 1300, delayMillis = delay, easing = easing)
+    val rotation = rotation(argsRotation, animationRotate)
+
+    val animationText = tween<Float>(durationMillis = 500, delayMillis = delay, easing = easing)
+    val argsText = ScaleAndAlphaArgs(fromScale = 400f, toScale = 1f, fromAlpha = 0f, toAlpha = 1f)
+    val (scaleText, alphaText) = scaleAndAlpha(args = argsText, animation = animationText)
+
+
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(10.dp)
+            .height(200.dp)
+            //.graphicsLayer(alpha = alpha, scaleX = scale, scaleY = scale)
+            .graphicsLayer(
+                alpha = alpha,
+                scaleX = scale,
+                scaleY = scale,
+                rotationX = rotation,
+            )
+            .animateContentSize(
+                animationSpec = TweenSpec(
+                    durationMillis = 500,
+                    easing = LinearOutSlowInEasing,
+
+                    )
+            )
+            .clickable {
+                onClick(character.id)
+            },
+    ) {
+        Box {
+
+            Row {
+                Image(
+                    painter = rememberAsyncImagePainter(character.image),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(18.dp))
+                        .height(200.dp)
+                        .fillMaxWidth(0.4F)
+                        .padding(end = 8.dp)
+                )
+
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.Start,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight()
+                        .zIndex(2.0F)
+                        .animateContentSize(
+                            animationSpec = TweenSpec(
+                                durationMillis = 600,
+                                easing = LinearOutSlowInEasing,
+                            )
+                        )
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    MaterialTheme.colors.surface.copy(alpha = 0.7F),
+                                    MaterialTheme.colors.surface,
+                                )
+                            )
+                        )
+                        .zIndex(1.0F)
+                        .fillMaxHeight()
+                        .fillMaxWidth()
+
+                ) {
+
+                    Text(
+                        text = character.name,
+                        modifier = Modifier
+                            .padding(start = 8.dp, bottom = 10.dp, end = 8.dp)
+                            .graphicsLayer(cameraDistance = scaleText)
+                            .animateContentSize(
+                                animationSpec = TweenSpec(
+                                    durationMillis = 500,
+                                    easing = LinearOutSlowInEasing,
+
+                                    )
+                            )
+                            .background(Color.Transparent),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Box(Modifier.padding(start = 8.dp)) {
+                        Divider(
+                            Modifier
+                                .height(4.dp)
+                                .width(40.dp)
+                                .background(PrimaryColor)
+                                .padding(start = 12.dp, top = 8.dp)
+                        )
+                    }
+
+                    Text(
+                        text = character.name,
+                        modifier = Modifier.padding(top = 12.dp, start = 8.dp),
+                        fontSize = 15.sp
+                    )
+
+                    Text(
+                        text = "${character.species} ",
+                        modifier = Modifier.padding(
+                            start = 8.dp,
+                            top = 8.dp,
+                            end = 8.dp,
+                            bottom = 16.dp
+                        ),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 
 @Composable

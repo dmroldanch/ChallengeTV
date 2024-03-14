@@ -20,7 +20,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DetailViewModel @Inject constructor(
-    private val repository: TVShowsRepository,
+    //private val repository: TVShowsRepository,
     @IODispatcher private val ioDispatcher: CoroutineDispatcher,
     @MainDisplatcher private val mainDispatcher: CoroutineDispatcher
 ) : ViewModel() {
@@ -34,36 +34,36 @@ class DetailViewModel @Inject constructor(
 
     fun getShowDetails(id: Int) {
         viewModelScope.launch(ioDispatcher) {
-            when (val result = repository.getShowDetails(id)) {
-                is DomainResponse.OnFailure -> {
-                    withContext(mainDispatcher) {
-
-                    }
-                }
-                is DomainResponse.Success -> {
-                    withContext(mainDispatcher) {
-                        _showDetail.value = result.data
-                    }
-                }
-            }
+//            when (val result = repository.getShowDetails(id)) {
+//                is DomainResponse.OnFailure -> {
+//                    withContext(mainDispatcher) {
+//
+//                    }
+//                }
+//                is DomainResponse.Success -> {
+//                    withContext(mainDispatcher) {
+//                        _showDetail.value = result.data
+//                    }
+//                }
+//            }
         }
     }
 
     fun getTalentsList(id: Int) {
         viewModelScope.launch(ioDispatcher) {
-            when (val result = repository.getShowTalens(id)) {
-                is DomainResponse.OnFailure -> {
-                    withContext(mainDispatcher) {
-
-                    }
-                }
-                is DomainResponse.Success -> {
-                    withContext(mainDispatcher) {
-                        _listTalents.clear()
-                        _listTalents.addAll(result.data)
-                    }
-                }
-            }
+//            when (val result = repository.getShowTalens(id)) {
+//                is DomainResponse.OnFailure -> {
+//                    withContext(mainDispatcher) {
+//
+//                    }
+//                }
+//                is DomainResponse.Success -> {
+//                    withContext(mainDispatcher) {
+//                        _listTalents.clear()
+//                        _listTalents.addAll(result.data)
+//                    }
+//                }
+//            }
         }
     }
 

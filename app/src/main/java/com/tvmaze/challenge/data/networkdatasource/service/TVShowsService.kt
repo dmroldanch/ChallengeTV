@@ -1,22 +1,26 @@
 package com.tvmaze.challenge.data.networkdatasource.service
 
-import com.tvmaze.challenge.data.model.show.detail.ShowDetailDTO
-import com.tvmaze.challenge.data.model.show.general.TvGeneralDataDTO
-import com.tvmaze.challenge.data.model.show.talent.TalentDTO
+import com.tvmaze.challenge.data.model.character.CharacterData
+import com.tvmaze.challenge.data.model.character.CharacterDetailDTO
+import com.tvmaze.challenge.data.model.episodes.EpisodeDetailDTO
+import com.tvmaze.challenge.data.model.episodes.EpisodesData
+import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface TVShowsService {
-    @GET("schedule")
-    suspend fun getShows(@Query("country") country : String, @Query("date")  date : String): List<TvGeneralDataDTO>
+    @GET("character")
+    suspend fun getCharacter(): Response<CharacterData>
 
-    @GET("search/shows")
-    suspend fun getShowsByQuery(@Query("q") query : String,@Query("country") country : String, @Query("date")  date : String): List<TvGeneralDataDTO>
+    @GET("character/")
+    suspend fun getCharacterSearch(@Query("name") name : String): Response<CharacterData>
 
-    @GET("shows/{id}")
-    suspend fun getShowDetails(@Path("id") query : Int): ShowDetailDTO
 
-    @GET("shows/{id}/cast")
-    suspend fun getShowTalents(@Path("id") query : Int): List<TalentDTO>
+    @GET("episode")
+    suspend fun getEpisodes(): Response<EpisodesData>
+
+    @GET("episode/{episodeNumber}")
+    suspend fun getEpisodesSearch(@Path("episodeNumber") episodeNumber : String): Response<EpisodeDetailDTO>
+
 }
