@@ -1,7 +1,5 @@
-package com.tvmaze.challenge.presentation.home
+package com.tvmaze.challenge.presentation.episodes
 
-import android.util.Log
-import androidx.compose.material.ListItem
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -10,12 +8,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tvmaze.challenge.core.di.IODispatcher
 import com.tvmaze.challenge.core.di.MainDisplatcher
-import com.tvmaze.challenge.core.utils.getDateFromToday
 import com.tvmaze.challenge.domain.DomainResponse
 import com.tvmaze.challenge.domain.model.episodes.Episode
-import com.tvmaze.challenge.domain.model.show.Show
 import com.tvmaze.challenge.domain.repository.IEpisodesRepository
-import com.tvmaze.challenge.domain.repository.TVShowsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
@@ -23,7 +18,7 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(
+class EpisodesViewModel @Inject constructor(
     private val repository: IEpisodesRepository,
     @IODispatcher private val ioDispatcher: CoroutineDispatcher,
     @MainDisplatcher private val mainDispatcher: CoroutineDispatcher
@@ -49,7 +44,7 @@ class HomeViewModel @Inject constructor(
             when (val result = repository.getEpisodes()) {
                 is DomainResponse.OnFailure -> {
                     withContext(mainDispatcher) {
-
+                        _list.clear()
                     }
                 }
 
@@ -75,7 +70,7 @@ class HomeViewModel @Inject constructor(
             when (val result = repository.getEpisodesQuery(keyword)) {
                 is DomainResponse.OnFailure -> {
                     withContext(mainDispatcher) {
-
+                        _list.clear()
                     }
                 }
 

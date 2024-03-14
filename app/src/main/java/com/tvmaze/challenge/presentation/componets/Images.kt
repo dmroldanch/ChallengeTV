@@ -47,7 +47,7 @@ fun GifImage(
     ) {
         Image(
             painter = rememberAsyncImagePainter(
-                ImageRequest.Builder(context).data(data = R.drawable.nofoundtaco).apply(block = {
+                ImageRequest.Builder(context).data(data = R.drawable.nofound).apply(block = {
                     size(Size.ORIGINAL)
                 }).build(), imageLoader = imageLoader
             ),
@@ -76,6 +76,18 @@ fun ImageLogo(){
         modifier = Modifier
             .fillMaxWidth().padding(top=12.dp, bottom = 0.dp)
             .height(35.dp)
+    )
+}
+
+@Composable
+fun ImageLogoFirst(){
+    Image(
+        painter = rememberAsyncImagePainter(R.drawable.logo),
+        contentDescription = null,
+        contentScale = ContentScale.FillHeight,
+        modifier = Modifier
+            .fillMaxWidth().padding(top=12.dp, bottom = 0.dp)
+            .height(60.dp)
     )
 }
 

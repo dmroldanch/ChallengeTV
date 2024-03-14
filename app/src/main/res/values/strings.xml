@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">Claro Video</string>
+    <string name="app_name">Rick And Morty</string>
     <string name="hint_search_query">Search</string>
     <string name="Series">Series</string>
     <string name="Comics">Comics</string>
     <string name="Details">Details</string>
-    <string name="noResult">No results, better go and enjoy a taco</string>
+    <string name="noResult">No results, better go look in another dimension</string>
 </resources>

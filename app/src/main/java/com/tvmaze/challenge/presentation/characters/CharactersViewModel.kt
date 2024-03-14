@@ -1,7 +1,5 @@
-package com.tvmaze.challenge.presentation.home
+package com.tvmaze.challenge.presentation.characters
 
-import android.util.Log
-import androidx.compose.material.ListItem
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -10,12 +8,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tvmaze.challenge.core.di.IODispatcher
 import com.tvmaze.challenge.core.di.MainDisplatcher
-import com.tvmaze.challenge.core.utils.getDateFromToday
 import com.tvmaze.challenge.domain.DomainResponse
+import com.tvmaze.challenge.domain.model.character.Character
 import com.tvmaze.challenge.domain.model.episodes.Episode
-import com.tvmaze.challenge.domain.model.show.Show
+import com.tvmaze.challenge.domain.repository.ICharactersRepository
 import com.tvmaze.challenge.domain.repository.IEpisodesRepository
-import com.tvmaze.challenge.domain.repository.TVShowsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
@@ -23,14 +20,14 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(
-    private val repository: IEpisodesRepository,
+class CharactersViewModel @Inject constructor(
+    private val repository: ICharactersRepository,
     @IODispatcher private val ioDispatcher: CoroutineDispatcher,
     @MainDisplatcher private val mainDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
-    private val _list = mutableStateListOf<Episode>()
-    val list: SnapshotStateList<Episode> get() = _list
+    private val _list = mutableStateListOf<Character>()
+    val list: SnapshotStateList<Character> get() = _list
 
     private val _search = mutableStateOf("")
     val search: State<String?> get() = _search
@@ -46,10 +43,10 @@ class HomeViewModel @Inject constructor(
     fun getHeroesList() {
 
         viewModelScope.launch(ioDispatcher) {
-            when (val result = repository.getEpisodes()) {
+            when (val result = repository.getCharacters()) {
                 is DomainResponse.OnFailure -> {
                     withContext(mainDispatcher) {
-
+                        _list.clear()
                     }
                 }
 
@@ -72,18 +69,17 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch(ioDispatcher) {
-            when (val result = repository.getEpisodesQuery(keyword)) {
+            when (val result = repository.getCharactersQuery(keyword)) {
                 is DomainResponse.OnFailure -> {
                     withContext(mainDispatcher) {
-
+                        _list.clear()
                     }
                 }
 
                 is DomainResponse.Success -> {
                     withContext(mainDispatcher) {
                         _list.clear()
-                        val list = listOf<Episode>(result.data)
-                        _list.addAll(list)
+                        _list.addAll(result.data)
 
                     }
                 }
