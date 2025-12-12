@@ -27,18 +27,6 @@ android {
         }
     }
 
-    lintOptions {
-        abortOnError true
-        ignoreWarnings true
-        enable 'InteroperabilityLibraryDependency'
-        disable 'ContentDescription', 'HardcodedText'
-        check 'NewApi'
-        htmlReport true
-        xmlReport true
-        htmlOutput file("$buildDir/reports/lint/lint-result.html")
-        xmlOutput file("$buildDir/reports/lint/lint-result.xml")
-    }
-
     buildTypes {
         release {
             minifyEnabled false
@@ -125,11 +113,6 @@ dependencies {
     //implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
     def nav_version = "2.5.3"
     implementation("androidx.navigation:navigation-compose:$nav_version")
-
-
-
-    //Compose ViewModel
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1'
 
     //Compose gif
     implementation "io.coil-kt:coil-compose:2.1.0"
