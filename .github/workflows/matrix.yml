@@ -47,8 +47,13 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run unit tests with coverage and print percentage
-        run: ./gradlew app:jacocoTestReport app:printJacocoCoverage
+      # This will:
+      # - run tests (jacocoTestReport depends on them)
+      # - generate coverage report (jacocoTestReport)
+      # - print coverage in logs (printJacocoCoverage)
+      # - FAIL if coverage < 50% (jacocoTestCoverageVerification)
+      - name: Run unit tests, coverage and enforce min 50%
+        run: ./gradlew app:jacocoTestReport app:printJacocoCoverage app:jacocoTestCoverageVerification
 
       - name: Upload Jacoco HTML report
         if: always()
@@ -76,7 +81,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run ktlintCheck
+      # This will FAIL if ktlint finds any violation
+      - name: Run ktlintCheck (must be clean)
         run: ./gradlew ktlintCheck
 
       - name: Run Android Lint

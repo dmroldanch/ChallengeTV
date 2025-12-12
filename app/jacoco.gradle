@@ -71,21 +71,14 @@ task jacocoTestReport(type: JacocoReport) {
  * Verificación de cobertura mínima (opcional).
  */
 task jacocoTestCoverageVerification(type: JacocoCoverageVerification) {
-    group = "verification"
-    description = "Verifies that line coverage is above the minimum threshold"
-
     dependsOn 'testDebugUnitTest'
-
-    def execData = fileTree(dir: buildDir, includes: [
-            'jacoco/*.exec',
-            'jacoco/*.ec',
-            '**/testDebugUnitTest.exec',
-            '**/*.ec'
-    ])
 
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(javaDebugTree, kotlinDebugTree))
-    executionData.setFrom(execData)
+    executionData.setFrom(fileTree(dir: buildDir, includes: [
+            'jacoco/*.exec',
+            '**/testDebugUnitTest.exec'
+    ]))
 
     violationRules {
         rule {
@@ -93,10 +86,11 @@ task jacocoTestCoverageVerification(type: JacocoCoverageVerification) {
             limit {
                 counter = 'LINE'
                 value   = 'COVERED_RATIO'
-                minimum = 0.5   // 50% mínimo
+                minimum = 0.5   // 50% minimum
             }
         }
     }
+}
 
     onlyIf {
         if (execData.files.empty) {

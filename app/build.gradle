@@ -62,6 +62,11 @@ android {
 }
 
 ktlint {
+    // Very important: CI must fail if there are any violations
+    ignoreFailures = false   // this is usually the default, but make it explicit
+    // optional:
+    // android = true
+    // reporters { reporter "plain"; reporter "checkstyle" }
     debug = true
     verbose = true
     android = true
