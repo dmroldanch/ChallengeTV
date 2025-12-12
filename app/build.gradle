@@ -112,3 +112,5 @@ dependencies {
 
 
 }
+
+apply from: 'jacoco.gradle'
