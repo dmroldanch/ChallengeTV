@@ -17,80 +17,153 @@ def fileFilter = [
         '**/*Test*.*',
         'android/**/*.*'
 ]
-def debugTree = fileTree(
-        dir: "${buildDir}/intermediates/classes/debug",
+
+// Rutas para AGP moderno (Java + Kotlin)
+def javaDebugTree = fileTree(
+        dir: "${buildDir}/intermediates/javac/debug/classes",
+        excludes: fileFilter
+)
+def kotlinDebugTree = fileTree(
+        dir: "${buildDir}/tmp/kotlin-classes/debug",
         excludes: fileFilter
 )
 def mainSrc = "${project.projectDir}/src/main/java"
 
-task jacocoTestReport(type: JacocoReport, dependsOn: ['testDebugUnitTest']) {
+/**
+ * Reporte Jacoco genérico.
+ * NO confía en un solo .exec, busca en todo build/ y no se salta silenciosamente.
+ */
+task jacocoTestReport(type: JacocoReport) {
     group = "verification"
     description = "Generate Jacoco coverage report for debug unit tests"
 
+    // Asegúrate que este es tu task de tests correcto.
+    // Si usas otro (p.ej. testReleaseUnitTest), cámbialo aquí:
+    dependsOn 'testDebugUnitTest'
+
+    // Busca TODOS los exec/ec que haya en build/
+    def execData = fileTree(dir: buildDir, includes: [
+            'jacoco/*.exec',
+            'jacoco/*.ec',
+            '**/testDebugUnitTest.exec',
+            '**/*.ec'
+    ])
+
     reports {
         xml.required = true
-        // Make sure we know where the XML will be
-        xml.outputLocation = file("${buildDir}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
         html.required = true
     }
 
-    sourceDirectories.setFrom(files([mainSrc]))
-    classDirectories.setFrom(files([debugTree]))
-    executionData.setFrom(fileTree(dir: buildDir, includes: [
-            'jacoco/testDebugUnitTest.exec'
-    ]))
-}
-
-task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn: ['testDebugUnitTest']) {
-    group = "verification"
-    description = "Verifies that line coverage is above the minimum threshold"
-
     sourceDirectories.setFrom(files(mainSrc))
-    classDirectories.setFrom(files(debugTree))
-    executionData.setFrom(files("${project.buildDir}/jacoco/testDebugUnitTest.exec"))
+    classDirectories.setFrom(files(javaDebugTree, kotlinDebugTree))
+    executionData.setFrom(execData)
 
-    violationRules {
-        rule {
-            // Whole module
-            element = 'BUNDLE'
-            // You can change to INSTRUCTION, BRANCH, etc.
-            limit {
-                counter = 'LINE'
-                value = 'COVERED_RATIO'
-                minimum = 0.5   // 50% mínimo
-            }
+    // Sobrescribe el onlyIf por defecto: siempre intenta correr
+    onlyIf {
+        if (execData.files.empty) {
+            logger.lifecycle("WARNING: No execution data (.exec/.ec) found under $buildDir. Report will be empty.")
         }
+        true
     }
 }
 
 /**
+ * Verificación de cobertura mínima (opcional).
+ */
+task jacocoTestCoverageVerification(type: JacocoCoverageVerification) {
+    group = "verification"
+    description = "Verifies that line coverage is above the minimum threshold"
+
+    dependsOn 'testDebugUnitTest'
+
+    def execData = fileTree(dir: buildDir, includes: [
+            'jacoco/*.exec',
+            'jacoco/*.ec',
+            '**/testDebugUnitTest.exec',
+            '**/*.ec'
+    ])
+
+    sourceDirectories.setFrom(files(mainSrc))
+    classDirectories.setFrom(files(javaDebugTree, kotlinDebugTree))
+    executionData.setFrom(execData)
+
+    violationRules {
+        rule {
+            element = 'BUNDLE'
+            limit {
+                counter = 'LINE'
+                value   = 'COVERED_RATIO'
+                minimum = 0.5   // 50% mínimo
+            }
+        }
+    }
+
+    onlyIf {
+        if (execData.files.empty) {
+            logger.lifecycle("WARNING: No execution data for JacocoTestCoverageVerification.")
+        }
+        !execData.files.empty
+    }
+}
+/**
  * Extra task to PRINT coverage in the console.
+ * It searches any Jacoco XML report under build/ and parses it with regex (no XML parser).
  */
 task printJacocoCoverage(dependsOn: ['jacocoTestReport']) {
     group = "verification"
-    description = "Prints overall line coverage from Jacoco XML report"
+    description = "Prints overall line coverage from any Jacoco XML report"
 
     doLast {
-        def reportFile = file("${buildDir}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
-        if (!reportFile.exists()) {
-            logger.lifecycle("Jacoco XML report not found: $reportFile")
+        def buildDirFile = file("${buildDir}")
+        if (!buildDirFile.exists()) {
+            logger.lifecycle("Build directory not found: $buildDirFile")
             return
         }
 
-        def xml = new XmlSlurper().parse(reportFile)
+        // Look for potential Jacoco XML reports
+        def xmlFiles = fileTree(dir: buildDirFile, includes: [
+                '**/jacoco*.xml',
+                '**/*TestReport*.xml',
+                '**/jacocoTestReport.xml'
+        ]).files
 
-        // Sum LINE counters (missed + covered) for the whole bundle
-        def counters = xml.counter.findAll { it.@type == 'LINE' }
-        if (!counters) {
-            logger.lifecycle("No LINE coverage info found in Jacoco report.")
+        if (xmlFiles.isEmpty()) {
+            logger.lifecycle("No Jacoco XML report found under: $buildDirFile")
             return
         }
 
-        int missed = counters.@missed*.toInteger().sum()
-        int covered = counters.@covered*.toInteger().sum()
-        int total = missed + covered
-        double coverage = total > 0 ? (covered * 100.0 / total) : 0.0
+        def reportFile = xmlFiles.first()
+        logger.lifecycle("Using Jacoco XML report: $reportFile")
 
-        logger.lifecycle(String.format("=> Line coverage: %.2f%% (%d / %d lines covered)", coverage, covered, total))
+        String text = reportFile.getText('UTF-8')
+
+        // Regex for: <counter type="LINE" missed="X" covered="Y" .../>
+        def matcher = text =~ /<counter[^>]*type="LINE"[^>]*missed="(\d+)"[^>]*covered="(\d+)"[^>]*\/>/
+
+        if (!matcher.find()) {
+            logger.lifecycle("No LINE counters found in Jacoco report.")
+            return
+        }
+
+        int missedTotal = 0
+        int coveredTotal = 0
+
+        matcher.each { full, missedStr, coveredStr ->
+            missedTotal += missedStr.toInteger()
+            coveredTotal += coveredStr.toInteger()
+        }
+
+        int total = missedTotal + coveredTotal
+        double coverage = total > 0 ? (coveredTotal * 100.0 / total) : 0.0
+        double missing  = 100.0 - coverage
+
+        logger.lifecycle(String.format(
+                "=> Line coverage: %.2f%% (%d / %d lines covered)",
+                coverage, coveredTotal, total
+        ))
+        logger.lifecycle(String.format(
+                "=> Missing coverage: %.2f%% (%d lines not covered)",
+                missing, missedTotal
+        ))
     }
 }
