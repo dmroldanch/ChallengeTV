@@ -62,7 +62,6 @@ android {
 }
 
 ktlint {
-    version = "0.47.1"
     debug = true
     verbose = true
     android = true
