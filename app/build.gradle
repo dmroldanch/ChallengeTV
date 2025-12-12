@@ -119,6 +119,7 @@ dependencies {
 
     //Mui
     implementation "com.google.accompanist:accompanist-systemuicontroller:0.27.0"
+    implementation "org.jetbrains.kotlin:kotlin-test:1.7.20"
 
 
 }
