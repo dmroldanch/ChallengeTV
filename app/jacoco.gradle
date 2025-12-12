@@ -24,30 +24,24 @@ def javaDebugTree = fileTree(
         excludes: fileFilter
 )
 def kotlinDebugTree = fileTree(
-        dir: "${buildDir}/tmp/kotlin-classes/debug",
+        dir: "${buildDir}/classes/kotlin/debug",
         excludes: fileFilter
 )
 def mainSrc = "${project.projectDir}/src/main/java"
 
+def execData = fileTree(dir: buildDir, includes: [
+    'jacoco/*.exec',
+    'jacoco/*.ec',
+    '**/testDebugUnitTest.exec',
+    '**/*.ec'
+])
+
 /**
  * Reporte Jacoco genérico.
- * NO confía en un solo .exec, busca en todo build/ y no se salta silenciosamente.
  */
-task jacocoTestReport(type: JacocoReport) {
+task jacocoTestReport(type: JacocoReport, dependsOn: 'testDebugUnitTest') {
     group = "verification"
     description = "Generate Jacoco coverage report for debug unit tests"
-
-    // Asegúrate que este es tu task de tests correcto.
-    // Si usas otro (p.ej. testReleaseUnitTest), cámbialo aquí:
-    dependsOn 'testDebugUnitTest'
-
-    // Busca TODOS los exec/ec que haya en build/
-    def execData = fileTree(dir: buildDir, includes: [
-            'jacoco/*.exec',
-            'jacoco/*.ec',
-            '**/testDebugUnitTest.exec',
-            '**/*.ec'
-    ])
 
     reports {
         xml.required = true
@@ -57,53 +51,39 @@ task jacocoTestReport(type: JacocoReport) {
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(javaDebugTree, kotlinDebugTree))
     executionData.setFrom(execData)
-
-    // Sobrescribe el onlyIf por defecto: siempre intenta correr
-    onlyIf {
-        if (execData.files.empty) {
-            logger.lifecycle("WARNING: No execution data (.exec/.ec) found under $buildDir. Report will be empty.")
-        }
-        true
-    }
 }
 
 /**
- * Verificación de cobertura mínima (opcional).
+ * Verificación de cobertura mínima (50%).
  */
-task jacocoTestCoverageVerification(type: JacocoCoverageVerification) {
-    dependsOn 'testDebugUnitTest'
+task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn: 'jacocoTestReport') {
+    group = "verification"
+    description = "Verifies that line coverage is above the minimum threshold"
+
+    executionData.setFrom(execData)
 
     sourceDirectories.setFrom(files(mainSrc))
     classDirectories.setFrom(files(javaDebugTree, kotlinDebugTree))
-    executionData.setFrom(fileTree(dir: buildDir, includes: [
-            'jacoco/*.exec',
-            '**/testDebugUnitTest.exec'
-    ]))
 
     violationRules {
         rule {
             element = 'BUNDLE'
             limit {
                 counter = 'LINE'
-                value   = 'COVERED_RATIO'
-                minimum = 0.5   // 50% minimum
+                // OJO: sin guion bajo
+                value   = 'COVEREDRATIO'
+                minimum = 0.5   // 50% mínimo
             }
         }
     }
 }
 
-    onlyIf {
-        if (execData.files.empty) {
-            logger.lifecycle("WARNING: No execution data for JacocoTestCoverageVerification.")
-        }
-        !execData.files.empty
-    }
-}
+
 /**
  * Extra task to PRINT coverage in the console.
  * It searches any Jacoco XML report under build/ and parses it with regex (no XML parser).
  */
-task printJacocoCoverage(dependsOn: ['jacocoTestReport']) {
+task printJacocoCoverage(dependsOn: 'jacocoTestReport') {
     group = "verification"
     description = "Prints overall line coverage from any Jacoco XML report"
 
@@ -131,7 +111,7 @@ task printJacocoCoverage(dependsOn: ['jacocoTestReport']) {
 
         String text = reportFile.getText('UTF-8')
 
-        // Regex for: <counter type="LINE" missed="X" covered="Y" .../>
+        // <counter type="LINE" missed="X" covered="Y" .../>
         def matcher = text =~ /<counter[^>]*type="LINE"[^>]*missed="(\d+)"[^>]*covered="(\d+)"[^>]*\/>/
 
         if (!matcher.find()) {
