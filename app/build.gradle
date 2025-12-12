@@ -3,6 +3,7 @@ plugins {
     id 'org.jetbrains.kotlin.android'
     id 'kotlin-kapt'
     id 'dagger.hilt.android.plugin'
+    id 'org.jlleitschuh.gradle.ktlint'
 }
 
 android {
@@ -26,10 +27,25 @@ android {
         }
     }
 
+    lint {
+        abortOnError true
+        ignoreWarnings true
+        enable 'InteroperabilityLibraryDependency'
+        disable 'ContentDescription', 'HardcodedText'
+        check 'NewApi'
+        htmlReport true
+        xmlReport true
+        htmlOutput file("$buildDir/reports/lint/lint-result.html")
+        xmlOutput file("$buildDir/reports/lint/lint-result.xml")
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            testCoverageEnabled true
         }
     }
     compileOptions {
@@ -58,6 +74,21 @@ android {
         ]
     }
 
+}
+
+ktlint {
+    version = "0.47.1"
+    debug = true
+    verbose = true
+    android = true
+    outputToConsole = true
+    outputColorName = "RED"
+    ignoreFailures = true
+    enableExperimentalRules = false
+    filter {
+        exclude("**/generated/**")
+        include("**/kotlin/**")
+    }
 }
 
 dependencies {
