@@ -1,4 +1,3 @@
-
 apply plugin: 'jacoco'
 
 jacoco {
@@ -10,15 +9,30 @@ tasks.withType(Test) {
     jacoco.excludes = ['jdk.internal.*']
 }
 
+// Common config
+def fileFilter = [
+        '**/R.class', '**/R$*.class',
+        '**/BuildConfig.*',
+        '**/Manifest*.*',
+        '**/*Test*.*',
+        'android/**/*.*'
+]
+def debugTree = fileTree(
+        dir: "${buildDir}/intermediates/classes/debug",
+        excludes: fileFilter
+)
+def mainSrc = "${project.projectDir}/src/main/java"
+
 task jacocoTestReport(type: JacocoReport, dependsOn: ['testDebugUnitTest']) {
+    group = "verification"
+    description = "Generate Jacoco coverage report for debug unit tests"
+
     reports {
         xml.required = true
+        // Make sure we know where the XML will be
+        xml.outputLocation = file("${buildDir}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
         html.required = true
     }
-
-    def fileFilter = ['**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*']
-    def debugTree = fileTree(dir: "${buildDir}/intermediates/classes/debug", excludes: fileFilter)
-    def mainSrc = "${project.projectDir}/src/main/java"
 
     sourceDirectories.setFrom(files([mainSrc]))
     classDirectories.setFrom(files([debugTree]))
@@ -27,20 +41,56 @@ task jacocoTestReport(type: JacocoReport, dependsOn: ['testDebugUnitTest']) {
     ]))
 }
 
-task jacocoTestCoverageVerification(type: JacocoCoverageVerification) {
+task jacocoTestCoverageVerification(type: JacocoCoverageVerification, dependsOn: ['testDebugUnitTest']) {
+    group = "verification"
+    description = "Verifies that line coverage is above the minimum threshold"
+
+    sourceDirectories.setFrom(files(mainSrc))
+    classDirectories.setFrom(files(debugTree))
+    executionData.setFrom(files("${project.buildDir}/jacoco/testDebugUnitTest.exec"))
+
     violationRules {
         rule {
+            // Whole module
+            element = 'BUNDLE'
+            // You can change to INSTRUCTION, BRANCH, etc.
             limit {
-                minimum = 0.5
+                counter = 'LINE'
+                value = 'COVERED_RATIO'
+                minimum = 0.5   // 50% mínimo
             }
         }
     }
-    sourceDirectories.setFrom(files
-            ("${project.projectDir}/src/main/java"))
-    classDirectories.setFrom(files(
-            "${project.buildDir}/intermediates/classes/debug"
-    ))
-    executionData.setFrom(files(
-            "${project.buildDir}/jacoco/testDebugUnitTest.exec"
-    ))
+}
+
+/**
+ * Extra task to PRINT coverage in the console.
+ */
+task printJacocoCoverage(dependsOn: ['jacocoTestReport']) {
+    group = "verification"
+    description = "Prints overall line coverage from Jacoco XML report"
+
+    doLast {
+        def reportFile = file("${buildDir}/reports/jacoco/jacocoTestReport/jacocoTestReport.xml")
+        if (!reportFile.exists()) {
+            logger.lifecycle("Jacoco XML report not found: $reportFile")
+            return
+        }
+
+        def xml = new XmlSlurper().parse(reportFile)
+
+        // Sum LINE counters (missed + covered) for the whole bundle
+        def counters = xml.counter.findAll { it.@type == 'LINE' }
+        if (!counters) {
+            logger.lifecycle("No LINE coverage info found in Jacoco report.")
+            return
+        }
+
+        int missed = counters.@missed*.toInteger().sum()
+        int covered = counters.@covered*.toInteger().sum()
+        int total = missed + covered
+        double coverage = total > 0 ? (covered * 100.0 / total) : 0.0
+
+        logger.lifecycle(String.format("=> Line coverage: %.2f%% (%d / %d lines covered)", coverage, covered, total))
+    }
 }

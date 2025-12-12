@@ -23,8 +23,8 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run unit tests with coverage
-        run: ./gradlew app:jacocoTestReport
+      - name: Run unit tests with coverage and print percentage
+        run: ./gradlew app:jacocoTestReport app:printJacocoCoverage
 
       - name: Upload Jacoco HTML report
         if: always() # so you can see it even if coverage fails
